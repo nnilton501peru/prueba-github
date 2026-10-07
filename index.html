@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Enlaces</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Roboto,sans-serif; }
+
+body { background:#000; color:#fff; min-height:100vh; padding:1.5rem 1rem; }
+
+#linternaOverlay {
+    display:none; position:fixed; inset:0;
+    background:#fff; z-index:99999; cursor:pointer;
+}
+
+.menu-container { position:fixed; top:15px; right:15px; z-index:10000; }
+
+.menu-btn {
+    background:#111; color:#00ffff; border:1px solid #222;
+    width:44px; height:44px; border-radius:8px; font-size:22px;
+    cursor:pointer; box-shadow:0 0 12px rgba(0,255,255,0.25);
+}
+
+.menu-dropdown {
+    display:none; position:absolute; top:54px; right:0;
+    background:#0f0f0f; min-width:220px; border:1px solid #222;
+    border-radius:10px; padding:1rem; box-shadow:0 8px 24px rgba(0,0,0,0.5);
+}
+.menu-dropdown.mostrar { display:block; }
+.menu-dropdown h4 { text-align:center; margin-bottom:1rem; color:#00ffff; font-size:1.1rem; }
+
+.menu-opcion {
+    width:100%; padding:0.8rem; margin:0.4rem 0;
+    background:#181818; color:#eee; border:none; border-radius:8px;
+    text-align:left; cursor:pointer; font-size:0.95rem;
+}
+.menu-opcion:hover { background:#222; color:#00ffff; }
+
+.fecha-hora { text-align:center; margin:4rem 0 2.5rem; }
+.hora { font-size:2.8rem; font-weight:700; color:#fff; }
+.fecha { font-size:1.15rem; color:#88ffff; margin-top:0.4rem; }
+
+.contenedor-botones { max-width:520px; margin:0 auto; display:flex; flex-direction:column; gap:1.4rem; }
+
+.boton {
+    padding:1.4rem; text-align:center; text-decoration:none;
+    font-size:1.4rem; font-weight:500; border-radius:12px;
+    background:#080808; border:2px solid;
+    box-shadow:0 0 15px currentColor; transition:all 0.2s;
+}
+.rojo        { color:#ff5555; border-color:#ff5555; }
+.azul        { color:#55ddff; border-color:#55ddff; }
+.verde       { color:#55ff77; border-color:#55ff77; }
+.amarillo    { color:#ffff55; border-color:#ffff55; }
+.morado      { color:#dd55ff; border-color:#dd55ff; }
+.azul-oscuro { color:#5577ff; border-color:#5577ff; }
+
+.ventana-apariencia {
+    display:none; position:fixed; top:0; right:0;
+    width:200px; height:100vh;
+    background:rgba(10,10,10,0.95); border-left:1px solid #333;
+    padding:1rem 0.8rem; z-index:20000;
+    box-shadow:-4px 0 20px rgba(0,0,0,0.7); overflow-y:auto;
+}
+.ventana-apariencia h3 {
+    text-align:center; color:#00ffff; margin-bottom:0.8rem;
+    font-size:0.95rem; border-bottom:1px solid #333; padding-bottom:0.5rem;
+}
+.grupo-estilo { margin-bottom:0.8rem; }
+.grupo-estilo h4 { color:#888; margin-bottom:0.3rem; font-size:0.78rem; text-transform:uppercase; }
+
+.opcion-estilo {
+    width:100%; padding:0.45rem 0.6rem; margin:0.2rem 0;
+    background:rgba(30,30,30,0.8); color:#ccc; border:1px solid #333;
+    border-radius:5px; cursor:pointer; text-align:left; font-size:0.82rem;
+}
+.opcion-estilo:hover { background:rgba(40,40,40,0.9); color:#fff; }
+.opcion-estilo.activo { border-color:#00ffff; background:rgba(0,40,40,0.9); color:#00ffff; }
+
+.btn-cerrar {
+    width:100%; padding:0.55rem; margin-top:0.8rem;
+    background:#1a1a1a; color:#aaa; border:1px solid #333;
+    border-radius:5px; cursor:pointer; font-size:0.85rem;
+}
+.btn-cerrar:hover { background:#2a2a2a; color:#fff; }
+
+/* --- VENTANA EDITAR ENLACES MODIFICADA --- */
+.ventana-editar {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,0.85); z-index:19000;
+    padding:2rem 1.5rem; overflow-y:auto;
+}
+.editar-contenido {
+    max-width:550px; margin:0 auto; background:#121212;
+    border-radius:12px; padding:2rem; border:1px solid #444;
+}
+.editar-contenido h3 { 
+    text-align:center; color:#00ffff; margin-bottom:1.5rem; 
+    font-size:1.6rem; /* Título más grande */
+}
+
+.campo {
+    margin-bottom:1.5rem; padding:1.3rem;
+    border:1px solid #444; border-radius:8px; background:#181818;
+}
+.campo label { 
+    display:block; margin-bottom:0.6rem; color:#88ffff; 
+    font-size:1.15rem; font-weight:500; /* Etiquetas más grandes y claras */
+}
+.campo input {
+    width:100%; padding:0.9rem; background:#0a0a0a;
+    border:1px solid #555; border-radius:6px; color:#fff; margin-bottom:0.8rem;
+    font-size:1.1rem; /* Texto dentro de los campos más grande */
+}
+
+.btn-agregar {
+    width:100%; padding:1rem; background:#1a5a2a;
+    color:#fff; border:none; border-radius:8px; cursor:pointer; margin:1rem 0;
+    font-size:1.15rem;
+}
+.btn-eliminar {
+    width:100%; padding:0.6rem; background:#552222;
+    color:#fff; border:none; border-radius:4px; cursor:pointer;
+    font-size:1rem;
+}
+.botones-acciones { display:flex; gap:1rem; margin-top:1.5rem; }
+.btn-guardar { 
+    flex:1; padding:1rem; background:#0077dd; color:#fff; 
+    border:none; border-radius:8px; cursor:pointer;
+    font-size:1.15rem;
+}
+.btn-cancelar { 
+    flex:1; padding:1rem; background:#2a2a2a; color:#fff; 
+    border:none; border-radius:8px; cursor:pointer;
+    font-size:1.15rem;
+}
+/* --- FIN MODIFICACIONES --- */
+
+#archivoRespaldo { display:none; }
+</style>
+</head>
+<body>
+
+<div id="linternaOverlay"></div>
+
+<div class="menu-container">
+    <button id="menuBtn" class="menu-btn">☰</button>
+    <div id="menuDropdown" class="menu-dropdown">
+        <h4>Configuración</h4>
+        <button id="abrirEditar"      class="menu-opcion">✏️ Editar Enlaces</button>
+        <button id="abrirApariencia"  class="menu-opcion">🎨 Apariencia</button>
+        <button id="pantallaCompleta" class="menu-opcion">⛶ Pantalla Completa</button>
+        <button id="guardarArchivo"   class="menu-opcion">💾 Guardar Respaldo</button>
+        <button id="restaurarArchivo" class="menu-opcion">📂 Restaurar Respaldo</button>
+        <button id="modoLinterna"     class="menu-opcion">🔦 Linterna</button>
+        <input type="file" id="archivoRespaldo" accept=".json">
+    </div>
+</div>
+
+<div class="fecha-hora">
+    <div id="hora" class="hora"></div>
+    <div id="fecha" class="fecha"></div>
+</div>
+
+<div class="contenedor-botones" id="contenedorEnlaces"></div>
+
+<div id="ventanaApariencia" class="ventana-apariencia">
+    <h3>🎨 Apariencia</h3>
+    <div class="grupo-estilo">
+        <h4>Tamaño</h4>
+        <button class="opcion-estilo" data-tam="1.1rem">Pequeño</button>
+        <button class="opcion-estilo activo" data-tam="1.4rem">Normal</button>
+        <button class="opcion-estilo" data-tam="1.7rem">Grande</button>
+        <button class="opcion-estilo" data-tam="2rem">Muy Grande</button>
+    </div>
+    <div class="grupo-estilo">
+        <h4>Grosor</h4>
+        <button class="opcion-estilo activo" data-peso="normal">Normal</button>
+        <button class="opcion-estilo" data-peso="bold">Negrita</button>
+        <button class="opcion-estilo" data-peso="300">Fina</button>
+    </div>
+    <div class="grupo-estilo">
+        <h4>Estilo</h4>
+        <button class="opcion-estilo activo" data-estilo="normal">Normal</button>
+        <button class="opcion-estilo" data-estilo="italic">Cursiva</button>
+    </div>
+    <button id="cerrarApariencia" class="btn-cerrar">✕ Cerrar</button>
+</div>
+
+<div id="ventanaEditar" class="ventana-editar">
+    <div class="editar-contenido">
+        <h3>Editar Enlaces</h3>
+        <div id="listaCampos"></div>
+        <button id="agregarCampo" class="btn-agregar">➕ Agregar nuevo enlace</button>
+        <div class="botones-acciones">
+            <button id="guardarCambios" class="btn-guardar">Guardar</button>
+            <button id="cerrarEditar"   class="btn-cancelar">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var CLAVE      = 'misEnlacesGuardados';
+var CLAVE_APAR = 'misEnlacesApariencia';
+var colores    = ['rojo','azul','verde','amarillo','morado','azul-oscuro'];
+var datosPorDefecto = {
+    'n0':'Virus total',    'u0':'https://www.virustotal.com/gui/home/upload',
+    'n1':'Pagalo.pe',      'u1':'https://pagalo.pe',
+    'n2':'Inversor solar', 'u2':'https://autosolar.pe/inversores-solares',
+    'n3':'Drive Mauricio', 'u3':'https://drive.google.com/drive/folders/1_2SPHFJYvevPHOgHi3qkn9iKfe60pd85',
+    'n4':'Github',         'u4':'https://github.com/nnilton501peru/Mauricio-',
+    'n5':'Ninite pc',      'u5':'https://ninite.com/?hl=es-PE'
+};
+
+var overlay       = document.getElementById('linternaOverlay');
+var menuBtn       = document.getElementById('menuBtn');
+var menuDropdown  = document.getElementById('menuDropdown');
+var ventanaApar   = document.getElementById('ventanaApariencia');
+var ventanaEditar = document.getElementById('ventanaEditar');
+var listaCampos   = document.getElementById('listaCampos');
+
+// ── Utilidades ────────────────────────────────────────────────────────────────
+
+function cerrarMenu() {
+    menuDropdown.classList.remove('mostrar');
+}
+
+function guardarEnMemoria(datos) {
+    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch(e) {}
+}
+
+function cargarDeMemoria() {
+    try {
+        var g = localStorage.getItem(CLAVE);
+        return g ? JSON.parse(g) : datosPorDefecto;
+    } catch(e) { return datosPorDefecto; }
+}
+
+function cargarEnlaces(datos) {
+    var cont = document.getElementById('contenedorEnlaces');
+    cont.innerHTML = '';
+    var i = 0;
+    while (datos['n' + i] !== undefined) {
+        var nombre = datos['n' + i].trim();
+        var enlace = datos['u' + i] || '#';
+        if (nombre) {
+            var a = document.createElement('a');
+            a.href        = enlace;
+            a.target      = '_blank';
+            a.rel         = 'noopener noreferrer';
+            a.className   = 'boton ' + colores[i % colores.length];
+            a.textContent = nombre;
+            cont.appendChild(a);
+        }
+        i++;
+    }
+    guardarEnMemoria(datos);
+}
+
+function actualizarFechaHora() {
+    var ahora = new Date();
+    var h = String(ahora.getHours()).padStart(2,'0');
+    var m = String(ahora.getMinutes()).padStart(2,'0');
+    var dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    document.getElementById('hora').textContent  = h + ':' + m;
+    document.getElementById('fecha').textContent = dias[ahora.getDay()] + ' ' + ahora.getDate() + ' de ' + meses[ahora.getMonth()];
+}
+
+function guardarApariencia(clave, valor) {
+    try {
+        var apar = JSON.parse(localStorage.getItem(CLAVE_APAR) || '{}');
+        apar[clave] = valor;
+        localStorage.setItem(CLAVE_APAR, JSON.stringify(apar));
+    } catch(e) {}
+}
+
+function aplicarAparienciaGuardada() {
+    try {
+        var apar = JSON.parse(localStorage.getItem(CLAVE_APAR) || '{}');
+        if (apar.tam) {
+            document.querySelectorAll('.boton').forEach(function(b) { b.style.fontSize = apar.tam; });
+            document.querySelectorAll('.opcion-estilo[data-tam]').forEach(function(b) {
+                b.classList.toggle('activo', b.dataset.tam === apar.tam);
+            });
+        }
+        if (apar.peso) {
+            document.querySelectorAll('.boton').forEach(function(b) { b.style.fontWeight = apar.peso; });
+            document.querySelectorAll('.opcion-estilo[data-peso]').forEach(function(b) {
+                b.classList.toggle('activo', b.dataset.peso === apar.peso);
+            });
+        }
+        if (apar.estilo) {
+            document.querySelectorAll('.boton').forEach(function(b) { b.style.fontStyle = apar.estilo; });
+            document.querySelectorAll('.opcion-estilo[data-estilo]').forEach(function(b) {
+                b.classList.toggle('activo', b.dataset.estilo === apar.estilo);
+            });
+        }
+    } catch(e) {}
+}
+
+function agregarCampoHTML(nombre, url) {
+    nombre = nombre || '';
+    url    = url    || '';
+    var div = document.createElement('div');
+    div.className = 'campo';
+    div.innerHTML =
+        '<label>📝 Nombre del enlace</label>' +
+        '<input type="text" class="inp-nombre" value="' + nombre.replace(/"/g,'&quot;') + '" placeholder="Ej: Mi página">' +
+        '<label>🔗 Dirección web (URL)</label>' +
+        '<input type="text" class="inp-url" value="' + url.replace(/"/g,'&quot;') + '" placeholder="Ej: https://ejemplo.com">' +
+        '<button class="btn-eliminar">🗑️ Eliminar este enlace</button>';
+    div.querySelector('.btn-eliminar').addEventListener('click', function() {
+        if (confirm('¿Seguro que deseas eliminar "' + div.querySelector('.inp-nombre').value + '"?')) {
+            div.remove();
+        }
+    });
+    listaCampos.appendChild(div);
+}
+
+// ── Menú ──────────────────────────────────────────────────────────────────────
+
+menuBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    menuDropdown.classList.toggle('mostrar');
+});
+document.addEventListener('click', function(e) {
+    if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) cerrarMenu();
+});
+
+// ── Linterna ──────────────────────────────────────────────────────────────────
+
+document.getElementById('modoLinterna').addEventListener('click', function() {
+    cerrarMenu();
+    overlay.style.display = 'block';
+});
+overlay.addEventListener('click', function() {
+    overlay.style.display = 'none';
+});
+
+// ── Pantalla completa ─────────────────────────────────────────────────────────
+
+document.getElementById('pantallaCompleta').addEventListener('click', function() {
+    cerrarMenu();
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    } else {
+        document.documentElement.requestFullscreen();
+    }
+});
+
+// ── Apariencia ────────────────────────────────────────────────────────────────
+
+document.getElementById('abrirApariencia').addEventListener('click', function() {
+    cerrarMenu();
+    ventanaApar.style.display = 'block';
+});
+document.getElementById('cerrarApariencia').addEventListener('click', function() {
+    ventanaApar.style.display = 'none';
+});
+
+document.querySelectorAll('.opcion-estilo[data-tam]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.opcion-estilo[data-tam]').forEach(function(b) { b.classList.remove('activo'); });
+        btn.classList.add('activo');
+        document.querySelectorAll('.boton').forEach(function(b) { b.style.fontSize = btn.dataset.tam; });
+        guardarApariencia('tam', btn.dataset.tam);
+    });
+});
+document.querySelectorAll('.opcion-estilo[data-peso]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.opcion-estilo[data-peso]').forEach(function(b) { b.classList.remove('activo'); });
+        btn.classList.add('activo');
+        document.querySelectorAll('.boton').forEach(function(b) { b.style.fontWeight = btn.dataset.peso; });
+        guardarApariencia('peso', btn.dataset.peso);
+    });
+});
+document.querySelectorAll('.opcion-estilo[data-estilo]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.opcion-estilo[data-estilo]').forEach(function(b) { b.classList.remove('activo'); });
+        btn.classList.add('activo');
+        document.querySelectorAll('.boton').forEach(function(b) { b.style.fontStyle = btn.dataset.estilo; });
+        guardarApariencia('estilo', btn.dataset.estilo);
+    });
+});
+
+// ── Editar enlaces ────────────────────────────────────────────────────────────
+
+document.getElementById('abrirEditar').addEventListener('click', function() {
+    cerrarMenu();
+    listaCampos.innerHTML = '';
+    document.querySelectorAll('.boton').forEach(function(b) {
+        agregarCampoHTML(b.textContent, b.getAttribute('href'));
+    });
+    ventanaEditar.style.display = 'block';
+});
+
+document.getElementById('agregarCampo').addEventListener('click', function() {
+    agregarCampoHTML('', '');
+});
+
+document.getElementById('cerrarEditar').addEventListener('click', function() {
+    ventanaEditar.style.display = 'none';
+});
+
+document.getElementById('guardarCambios').addEventListener('click', function() {
+    var campos = document.querySelectorAll('.campo');
+    var nuevos = {};
+    var idx = 0;
+    campos.forEach(function(c) {
+        var n = c.querySelector('.inp-nombre').value.trim();
+        var u = c.querySelector('.inp-url').value.trim() || '#';
+        if (n) { nuevos['n' + idx] = n; nuevos['u' + idx] = u; idx++; }
+    });
+    cargarEnlaces(nuevos);
+    ventanaEditar.style.display = 'none';
+    alert('✅ Guardado correctamente');
+});
+
+// ── Respaldo ──────────────────────────────────────────────────────────────────
+
+document.getElementById('guardarArchivo').addEventListener('click', function() {
+    cerrarMenu();
+    var datos = cargarDeMemoria();
+    var blob  = new Blob([JSON.stringify(datos, null, 2)], { type:'application/json' });
+    var url   = URL.createObjectURL(blob);
+    var a     = document.createElement('a');
+    a.href     = url;
+    a.download = 'respaldo_enlaces_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+});
+
+document.getElementById('restaurarArchivo').addEventListener('click', function() {
+    cerrarMenu();
+    document.getElementById('archivoRespaldo').click();
+});
+
+document.getElementById('archivoRespaldo').addEventListener('change', function(e) {
+    var archivo = e.target.files[0];
+    if (!archivo) return;
+    var lector = new FileReader();
+    lector.onload = function(ev) {
+        try {
+            cargarEnlaces(JSON.parse(ev.target.result));
+            alert('✅ Restaurado correctamente');
+        } catch(err) {
+            alert('❌ Archivo inválido');
+        }
+    };
+    lector.readAsText(archivo);
+    e.target.value = '';
+});
+
+// ── Arranque ──────────────────────────────────────────────────────────────────
+
+actualizarFechaHora();
+setInterval(actualizarFechaHora, 60000);
+cargarEnlaces(cargarDeMemoria());
+aplicarAparienciaGuardada();
+</script>
+</body>
+</html>
