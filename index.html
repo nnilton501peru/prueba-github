@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel de Enlaces</title>
+<title>Panel de Enlaces v2</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Roboto,sans-serif;}
 body{background:#000;color:#fff;min-height:100vh;padding:1.5rem 1rem;}
@@ -21,15 +21,16 @@ body{background:#000;color:#fff;min-height:100vh;padding:1.5rem 1rem;}
 
 /* TITULO Y HORA */
 .titulo-app{text-align:center;margin-top:3.5rem;margin-bottom:0.3rem;}
-.titulo-app span{font-size:1.5rem;font-weight:700;text-shadow:0 0 18px currentColor;}
+.titulo-app span{font-size:2.2rem;font-weight:700;text-shadow:0 0 18px currentColor;}
 .fecha-hora{text-align:center;margin:0.5rem 0 2rem;}
+.saludo{font-size:1rem;font-weight:600;color:#55ffdd;letter-spacing:0.2em;margin-bottom:0.4rem;}
 .hora{font-size:3.2rem;font-weight:800;color:#fff;letter-spacing:0.04em;line-height:1;}
 .hora-ampm{font-size:2rem;font-weight:800;color:#ffffff;margin-left:0.4rem;vertical-align:middle;}
 .fecha{font-size:1.2rem;color:#ffaa55;margin-top:0.6rem;letter-spacing:0.03em;text-align:center;}
 
 /* BOTONES PRINCIPALES */
 .contenedor-botones{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:1.2rem;}
-.boton{padding:1.4rem;text-align:center;text-decoration:none;font-size:1.4rem;font-weight:500;border-radius:12px;background:#0a0a0a;border:2px solid;box-shadow:0 0 12px currentColor;display:block;transition:transform 0.1s,opacity 0.1s;}
+.boton{padding:1.4rem;text-align:center;text-decoration:none;font-size:1.4rem;font-weight:500;border-radius:12px;background:#0a0a0a;border:2px solid;box-shadow:0 0 12px currentColor;display:block;transition:transform 0.1s,opacity 0.1s;font-family:'Courier New',monospace;}
 .boton:active{transform:scale(0.96);opacity:0.7;}
 .rojo{color:#ff5555;border-color:#ff5555;}
 .azul{color:#55ddff;border-color:#55ddff;}
@@ -104,9 +105,10 @@ body{background:#000;color:#fff;min-height:100vh;padding:1.5rem 1rem;}
   </div>
 </div>
 
-<div class="titulo-app"><span id="txtTitulo">Enlaces Mauricio</span></div>
+<div class="titulo-app"><span id="txtTitulo">Enlaces Mauricio v2</span></div>
 
 <div class="fecha-hora">
+  <div id="txtSaludo" class="saludo"></div>
   <div class="hora"><span id="txtHora">--:--</span><span id="txtAmpm" class="hora-ampm">AM</span></div>
   <div id="txtFecha" class="fecha">---</div>
 </div>
@@ -153,7 +155,7 @@ body{background:#000;color:#fff;min-height:100vh;padding:1.5rem 1rem;}
     </div>
     <div class="fila-btn">
       <button class="btn-ok" onclick="guardarTitulo()">Guardar</button>
-      <button class="btn-no" onclick="cerrarModal('modalTitulo')">Cancelar</button>
+      <button class="btn-no" onclick="cancelarTitulo()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -179,8 +181,9 @@ var enlaces = [
   {n:'Github',         u:'https://github.com/nnilton501peru/Mauricio-'},
   {n:'Ninite pc',      u:'https://ninite.com/?hl=es-PE'}
 ];
-var titulo      = 'Enlaces Mauricio';
+var titulo      = 'Enlaces Mauricio v2';
 var colorTitulo = '#00ffff';
+var colorPendiente = '#00ffff';
 var apariencia  = {tam:'1.4rem', peso:'normal', estilo:'normal'};
 var colores     = ['rojo','azul','verde','amarillo','morado','azul-oscuro'];
 
@@ -203,6 +206,37 @@ function cargar() {
     if (c) colorTitulo = c;
     if (a) apariencia  = JSON.parse(a);
   } catch(e) {}
+  colorPendiente = colorTitulo;
+}
+
+/* Escapa caracteres peligrosos para atributos HTML */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;')
+    .replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+
+/* Solo acepta http(s), '#' o dominios sin esquema (les pone https://) */
+function urlSegura(u) {
+  u = String(u == null ? '' : u).trim();
+  if (!u || u === '#') return '#';
+  if (/^https?:\/\//i.test(u)) return u;
+  if (/^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(u)) return 'https://' + u;
+  return '#';
+}
+
+/* Limpia una lista de enlaces importada */
+function enlacesValidos(arr) {
+  var out = [];
+  for (var i = 0; i < arr.length; i++) {
+    var x = arr[i];
+    if (x && typeof x.n === 'string' && x.n.trim()) {
+      out.push({n: x.n.trim(), u: urlSegura(x.u)});
+    }
+  }
+  return out;
 }
 
 function pintarEnlaces() {
@@ -210,7 +244,7 @@ function pintarEnlaces() {
   lista.innerHTML = '';
   for (var i = 0; i < enlaces.length; i++) {
     var a = document.createElement('a');
-    a.href             = enlaces[i].u;
+    a.href             = urlSegura(enlaces[i].u);
     a.target           = '_blank';
     a.rel              = 'noopener noreferrer';
     a.className        = 'boton ' + colores[i % colores.length];
@@ -236,8 +270,10 @@ function tick() {
   var h12  = raw % 12 || 12;
   var h    = String(h12).padStart(2,'0');
   var m    = String(d.getMinutes()).padStart(2,'0');
-  var dias  = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+  var dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var saludo = raw < 12 ? 'BUENOS DÍAS ☀️' : (raw < 19 ? 'BUENAS TARDES 🌤️' : 'BUENAS NOCHES 🌙');
+  document.getElementById('txtSaludo').textContent = saludo;
   document.getElementById('txtHora').textContent  = h + ':' + m;
   document.getElementById('txtAmpm').textContent  = ampm;
   document.getElementById('txtFecha').textContent = dias[d.getDay()] + ' ' + d.getDate() + ' de ' + meses[d.getMonth()];
@@ -289,6 +325,7 @@ function toggleFullscreen() {
 
 function abrirTitulo() {
   cerrarMenu();
+  colorPendiente = colorTitulo;
   document.getElementById('inputTitulo').value = titulo;
   document.querySelectorAll('.color-btn').forEach(function(b){
     var oc = b.getAttribute('onclick') || '';
@@ -299,12 +336,20 @@ function abrirTitulo() {
 function guardarTitulo() {
   var v = document.getElementById('inputTitulo').value.trim();
   if (v) { titulo = v; }
+  colorTitulo = colorPendiente;
   pintarTitulo();
   guardar();
   cerrarModal('modalTitulo');
 }
+/* Cancelar: vuelve el título a como estaba antes de abrir el modal */
+function cancelarTitulo() {
+  colorPendiente = colorTitulo;
+  pintarTitulo();
+  cerrarModal('modalTitulo');
+}
+/* Solo muestra la vista previa; el color se guarda al pulsar Guardar */
 function setColorTitulo(color, btn) {
-  colorTitulo = color;
+  colorPendiente = color;
   document.querySelectorAll('.color-btn').forEach(function(b){ b.classList.remove('sel'); });
   btn.classList.add('sel');
   var el = document.getElementById('txtTitulo');
@@ -358,9 +403,9 @@ function agregarCampo(nombre, url) {
   div.className = 'campo';
   div.innerHTML =
     '<label class="lbl-nombre">Nombre</label>' +
-    '<input type="text" class="inp-n" value="' + (nombre||'').replace(/"/g,'&quot;') + '">' +
+    '<input type="text" class="inp-n" value="' + esc(nombre) + '">' +
     '<label class="lbl-url">URL</label>' +
-    '<input type="text" class="inp-u" value="' + (url||'').replace(/"/g,'&quot;') + '">' +
+    '<input type="text" class="inp-u" value="' + esc(url) + '">' +
     '<button class="btn-del">🗑️ Eliminar</button>';
   div.querySelector('.btn-del').onclick = function() {
     var nom = div.querySelector('.inp-n').value || 'este enlace';
@@ -373,7 +418,7 @@ function guardarEnlaces() {
   var nuevos = [];
   campos.forEach(function(c) {
     var n = c.querySelector('.inp-n').value.trim();
-    var u = c.querySelector('.inp-u').value.trim() || '#';
+    var u = urlSegura(c.querySelector('.inp-u').value);
     if (n) nuevos.push({n:n, u:u});
   });
   enlaces = nuevos;
@@ -400,16 +445,20 @@ function restaurarRespaldo(input) {
   r.onload = function(e) {
     try {
       var datos = JSON.parse(e.target.result);
+      var nuevos;
       if (Array.isArray(datos)) {
-        enlaces = datos;
+        nuevos = enlacesValidos(datos);
       } else {
-        enlaces = [];
+        var tmp = [];
         var i = 0;
         while (datos['n'+i] !== undefined) {
-          enlaces.push({n:datos['n'+i], u:datos['u'+i]||'#'});
+          tmp.push({n:datos['n'+i], u:datos['u'+i]});
           i++;
         }
+        nuevos = enlacesValidos(tmp);
       }
+      if (nuevos.length === 0) throw new Error('vacio');
+      enlaces = nuevos;
       pintarEnlaces();
       guardar();
       alert('Restaurado');
